@@ -1,0 +1,10 @@
+{
+  "lastAttempt": {
+    "at": "2026-10-16T10:01:48.461Z",
+    "ok": false,
+    "kind": "timeout",
+    "message": "Timed out after 30000 ms",
+    "url": "https://stats.nba.com/stats/leaguegamelog?Counter=0&DateFrom=&DateTo=&Direction=DESC&LeagueID=00&PlayerOrTeam=P&Season=2026-27&SeasonType=Regular%20Season&Sorter=DATE",
+    "attempts": 4
+  }
+}
