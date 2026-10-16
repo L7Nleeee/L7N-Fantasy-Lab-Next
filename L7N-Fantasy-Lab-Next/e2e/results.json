@@ -1,0 +1,150 @@
+{
+ "passed": 28,
+ "failed": 0,
+ "results": [
+  {
+   "test": "boot: no console errors, header + data chip, no blocking banner after sync",
+   "ok": true,
+   "ms": 283
+  },
+  {
+   "test": "all six tabs render without error panels",
+   "ok": true,
+   "ms": 2588
+  },
+  {
+   "test": "quick search: blank shows prompt (no preselected player), nickname + diacritics work, Enter adds",
+   "ok": true,
+   "ms": 1460
+  },
+  {
+   "test": "draft: 13 strength bars, numeric Fit, roster table with sticky name column",
+   "ok": true,
+   "ms": 71
+  },
+  {
+   "test": "draft: candidate sort, search, mark-unavailable, available-only filter",
+   "ok": true,
+   "ms": 1702
+  },
+  {
+   "test": "what-if: simulate in/out without touching the roster; max 4; clear",
+   "ok": true,
+   "ms": 1424
+  },
+  {
+   "test": "weekly: add opponents, week switch changes games, stepper override, H2H checkbox changes record",
+   "ok": true,
+   "ms": 3467
+  },
+  {
+   "test": "schedule: 30-team grid, click week header sets week, manual team override changes games",
+   "ok": true,
+   "ms": 2001
+  },
+  {
+   "test": "players: detail empty-state first, search → detail, add from detail, status badges",
+   "ok": true,
+   "ms": 2623
+  },
+  {
+   "test": "rookies: filter, row → detail separates NCAA / projection / real-stats; unverified is not invented",
+   "ok": true,
+   "ms": 1541
+  },
+  {
+   "test": "yahoo: add to my order; drag re-orders live and saves exactly once; ↑↓ buttons; persists after reload",
+   "ok": true,
+   "ms": 8993
+  },
+  {
+   "test": "state survives reload: roster, opponent, weights, week, basis",
+   "ok": true,
+   "ms": 50
+  },
+  {
+   "test": "leagues: create, isolate, switch, rename, copy, delete (drawer)",
+   "ok": true,
+   "ms": 5208
+  },
+  {
+   "test": "weights: punt TOV (0) removes it from the board; resetting restores 13",
+   "ok": true,
+   "ms": 3308
+  },
+  {
+   "test": "CSV import: current dataset loads independently; switching basis changes data; fallback banner when missing",
+   "ok": true,
+   "ms": 4241
+  },
+  {
+   "test": "CSV import: invalid file is rejected with a message and old data is kept",
+   "ok": true,
+   "ms": 1384
+  },
+  {
+   "test": "photos: official NBA CDN image by NBA id; broken image falls back to initials; no-id players never get a picture; toggle off removes all",
+   "ok": true,
+   "ms": 4403
+  },
+  {
+   "test": "headshot preview (desktop): hover and keyboard focus open the 1040x760 image, leaving/Escape close; NO layout shift, row height or scroll change",
+   "ok": true,
+   "ms": 3052
+  },
+  {
+   "test": "perf-timings",
+   "ok": true,
+   "tab": 48,
+   "back": 38,
+   "add": 109,
+   "sort": 108,
+   "remove": 144
+  },
+  {
+   "test": "performance: tab switch, add player, sort and search stay responsive (520 players)",
+   "ok": true,
+   "ms": 1949
+  },
+  {
+   "test": "copy my draft order between leagues: pull/push, merge/replace, preview, empty source disabled, persisted",
+   "ok": true,
+   "ms": 6045
+  },
+  {
+   "test": "data pipeline in the app: sync from L7N manifest, versions + date coverage shown, zero-GP star stays searchable with official photo id, failures visible while old data serves",
+   "ok": true,
+   "ms": 8183
+  },
+  {
+   "test": "migration in a real browser: V4.0.21 localStorage is copied, original keys byte-identical",
+   "ok": true,
+   "ms": 1783
+  },
+  {
+   "test": "offline / sync failure: app still opens, says so, keeps working with saved data",
+   "ok": true,
+   "ms": 2364
+  },
+  {
+   "test": "service worker: app shell loads again while the network is offline (http only)",
+   "ok": true,
+   "ms": 3155
+  },
+  {
+   "test": "corrupt localStorage does not brick the app",
+   "ok": true,
+   "ms": 1566
+  },
+  {
+   "test": "mobile 390px: bottom nav, card candidates, no horizontal page overflow on any tab, touch-drag reorder",
+   "ok": true,
+   "ms": 9201
+  },
+  {
+   "test": "no unexpected console errors during the whole run",
+   "ok": true,
+   "ms": 0
+  }
+ ]
+}

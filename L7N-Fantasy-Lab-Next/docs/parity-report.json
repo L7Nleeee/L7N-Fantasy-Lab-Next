@@ -1,0 +1,39 @@
+{
+ "original": "orig/index.html",
+ "generatedFrom": "synthetic fixture (test-only, not real NBA data)",
+ "scenarios": [
+  {
+   "scenario": "defaults / top200 / minGP 20",
+   "players": 613,
+   "pool": 200,
+   "categories": 13,
+   "zScoresCompared": 7916,
+   "maxZDiff": 0,
+   "maxFitDiff": 0,
+   "maxWeeklyDiff": 0,
+   "h2hWins": 9
+  },
+  {
+   "scenario": "league pool / minGP 40 / TOV punted / DD x2",
+   "players": 613,
+   "pool": 362,
+   "categories": 12,
+   "zScoresCompared": 7303,
+   "maxZDiff": 0,
+   "maxFitDiff": 0,
+   "maxWeeklyDiff": 0,
+   "h2hWins": 8
+  },
+  {
+   "scenario": "overrides + team overrides + week 17",
+   "players": 613,
+   "pool": 200,
+   "categories": 12,
+   "zScoresCompared": 7303,
+   "maxZDiff": 0,
+   "maxFitDiff": 0,
+   "maxWeeklyDiff": 0,
+   "h2hWins": 6
+  }
+ ]
+}

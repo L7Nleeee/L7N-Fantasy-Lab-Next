@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070a1c">
+<title>L7N H2H Fantasy Lab v5.1.0</title>
+<link rel="icon" href="assets/l7n-logo.png" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles/app.css">
+</head>
+<body>
+<div id="app" class="app">
+  <header class="top" id="top"></header>
+  <nav class="rail" id="rail" aria-label="主要導覽"></nav>
+  <main class="main" id="main">
+    <div id="banner"></div>
+    <section class="view" data-view="draft" id="view-draft" hidden></section>
+    <section class="view" data-view="weekly" id="view-weekly" hidden></section>
+    <section class="view" data-view="schedule" id="view-schedule" hidden></section>
+    <section class="view" data-view="players" id="view-players" hidden></section>
+    <section class="view" data-view="rookies" id="view-rookies" hidden></section>
+    <section class="view" data-view="yahoo" id="view-yahoo" hidden></section>
+    <p class="tiny" style="text-align:center;margin-top:28px" id="footer"></p>
+  </main>
+  <nav class="bottomnav" id="bottomnav" aria-label="主要導覽（手機）"></nav>
+  <button class="fab" id="fab" aria-label="搜尋並新增球員" data-testid="fab"></button>
+</div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<noscript><p style="padding:24px;color:#fff">L7N H2H Fantasy Lab 需要啟用 JavaScript。</p></noscript>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

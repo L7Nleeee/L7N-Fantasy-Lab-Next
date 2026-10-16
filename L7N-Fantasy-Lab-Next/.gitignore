@@ -1,0 +1,5 @@
+node_modules/
+dist/
+e2e/_bad.csv
+.DS_Store
+.tmp/

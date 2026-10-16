@@ -1,0 +1,9 @@
+{
+  "name": "L7N H2H Fantasy Lab",
+  "short_name": "L7N Lab",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#070a1c",
+  "theme_color": "#070a1c",
+  "icons": [{ "src": "assets/l7n-logo.png", "sizes": "180x180", "type": "image/png" }]
+}

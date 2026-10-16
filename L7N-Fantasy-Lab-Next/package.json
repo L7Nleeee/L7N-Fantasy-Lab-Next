@@ -1,0 +1,20 @@
+{
+  "name": "l7n-fantasy-lab-next",
+  "version": "5.1.0",
+  "private": true,
+  "type": "module",
+  "description": "L7N H2H Fantasy Lab — NBA H2H fantasy basketball decision lab (static site, no runtime dependencies)",
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:e2e": "node e2e/run.mjs",
+    "build": "node scripts/build.mjs",
+    "check": "npm test && npm run build",
+    "data:fixture": "node pipeline/fixtures/generate.mjs --out .tmp/fx.json",
+    "data:demo": "node pipeline/cli.mjs --season 2026 --out .tmp/data --fixture .tmp/fx.json --now 2026-11-18T06:00:00Z",
+    "data:update": "node pipeline/cli.mjs --out data --check-headshots"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

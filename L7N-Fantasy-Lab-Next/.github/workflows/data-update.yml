@@ -1,0 +1,72 @@
+# Scheduled + manual dataset update. Writes ONLY to the `data` branch (never to main), so the website is not redeployed by data updates.
+# NOTE: this workflow has NOT been executed by the author (no GitHub access / no network in the build sandbox).
+# stats.nba.com may block GitHub-hosted runners (HTTP 403 / timeouts). In that case this job FAILS VISIBLY, status.json on the data branch
+# records why, and the last validated files stay published. See docs/DATA-PIPELINE.md for the manual-CSV fallback.
+name: Update L7N datasets
+on:
+  schedule:
+    - cron: '30 9 * * *'          # daily 09:30 UTC (after the previous night's US games are final)
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'Season start year, e.g. 2026 for 2026-27 (blank = auto)'
+        required: false
+      force_previous:
+        description: 'Re-fetch the (normally immutable) previous season'
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: l7n-data
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Pipeline tests (must pass before touching data)
+        run: node --test tests/pipeline.test.mjs
+      - name: Check out the data branch (created on first run)
+        run: |
+          if git ls-remote --exit-code --heads origin data >/dev/null 2>&1; then
+            git fetch origin data
+            git worktree add -B data _data origin/data
+          else
+            git worktree add --detach _data
+            git -C _data checkout --orphan data
+            git -C _data rm -rf . >/dev/null 2>&1 || true
+          fi
+      - name: Generate, validate and publish datasets
+        id: gen
+        env:
+          SEASON_INPUT: ${{ inputs.season }}
+          FORCE_PREV: ${{ inputs.force_previous }}
+        run: |
+          set +e
+          SEASON="$SEASON_INPUT"
+          if [ -z "$SEASON" ]; then Y=$(date -u +%Y); M=$(date -u +%-m); if [ "$M" -ge 9 ]; then SEASON=$Y; else SEASON=$((Y-1)); fi; fi
+          EXTRA=""; if [ "$FORCE_PREV" = "true" ]; then EXTRA="--force-previous"; fi
+          node pipeline/cli.mjs --season "$SEASON" --out _data/data --check-headshots $EXTRA
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Commit the result (new version, or only status.json when the run failed)
+        run: |
+          cd _data
+          git config user.name  "l7n-data-bot"
+          git config user.email "l7n-data-bot@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "data: $(date -u +%Y-%m-%dT%H:%MZ) (pipeline exit ${{ steps.gen.outputs.exit }})"
+            git push origin data
+          else
+            echo "nothing to commit (data unchanged)"
+          fi
+      - name: Fail the job visibly if the pipeline failed
+        if: steps.gen.outputs.exit != '0'
+        run: |
+          echo "::error::Dataset update failed. The previous validated data is still published. See data/status.json on the data branch."
+          exit 1
