@@ -1,145 +1,150 @@
 {
- "passed": 28,
+ "passed": 29,
  "failed": 0,
  "results": [
   {
    "test": "boot: no console errors, header + data chip, no blocking banner after sync",
    "ok": true,
-   "ms": 283
+   "ms": 267
   },
   {
    "test": "all six tabs render without error panels",
    "ok": true,
-   "ms": 2588
+   "ms": 2784
   },
   {
    "test": "quick search: blank shows prompt (no preselected player), nickname + diacritics work, Enter adds",
    "ok": true,
-   "ms": 1460
+   "ms": 1204
   },
   {
-   "test": "draft: 13 strength bars, numeric Fit, roster table with sticky name column",
+   "test": "draft: radar chart + strength bars, numeric Fit, roster table with sticky name column",
    "ok": true,
-   "ms": 71
+   "ms": 115
   },
   {
    "test": "draft: candidate sort, search, mark-unavailable, available-only filter",
    "ok": true,
-   "ms": 1702
+   "ms": 1759
   },
   {
    "test": "what-if: simulate in/out without touching the roster; max 4; clear",
    "ok": true,
-   "ms": 1424
+   "ms": 1572
   },
   {
-   "test": "weekly: add opponents, week switch changes games, stepper override, H2H checkbox changes record",
+   "test": "weekly: basis selector, trend note, roster rows, H2H, pickup recommender",
    "ok": true,
-   "ms": 3467
+   "ms": 4320
   },
   {
    "test": "schedule: 30-team grid, click week header sets week, manual team override changes games",
    "ok": true,
-   "ms": 2001
+   "ms": 1551
   },
   {
    "test": "players: detail empty-state first, search → detail, add from detail, status badges",
    "ok": true,
-   "ms": 2623
+   "ms": 2979
   },
   {
    "test": "rookies: filter, row → detail separates NCAA / projection / real-stats; unverified is not invented",
    "ok": true,
-   "ms": 1541
+   "ms": 1551
   },
   {
    "test": "yahoo: add to my order; drag re-orders live and saves exactly once; ↑↓ buttons; persists after reload",
    "ok": true,
-   "ms": 8993
+   "ms": 10054
   },
   {
    "test": "state survives reload: roster, opponent, weights, week, basis",
    "ok": true,
-   "ms": 50
+   "ms": 448
   },
   {
    "test": "leagues: create, isolate, switch, rename, copy, delete (drawer)",
    "ok": true,
-   "ms": 5208
+   "ms": 6647
   },
   {
    "test": "weights: punt TOV (0) removes it from the board; resetting restores 13",
    "ok": true,
-   "ms": 3308
+   "ms": 3498
   },
   {
    "test": "CSV import: current dataset loads independently; switching basis changes data; fallback banner when missing",
    "ok": true,
-   "ms": 4241
+   "ms": 4630
   },
   {
    "test": "CSV import: invalid file is rejected with a message and old data is kept",
    "ok": true,
-   "ms": 1384
+   "ms": 1484
   },
   {
    "test": "photos: official NBA CDN image by NBA id; broken image falls back to initials; no-id players never get a picture; toggle off removes all",
    "ok": true,
-   "ms": 4403
+   "ms": 4950
   },
   {
    "test": "headshot preview (desktop): hover and keyboard focus open the 1040x760 image, leaving/Escape close; NO layout shift, row height or scroll change",
    "ok": true,
-   "ms": 3052
+   "ms": 3444
   },
   {
    "test": "perf-timings",
    "ok": true,
-   "tab": 48,
-   "back": 38,
-   "add": 109,
-   "sort": 108,
-   "remove": 144
+   "tab": 46,
+   "back": 36,
+   "add": 156,
+   "sort": 68,
+   "remove": 130
   },
   {
    "test": "performance: tab switch, add player, sort and search stay responsive (520 players)",
    "ok": true,
-   "ms": 1949
+   "ms": 1900
   },
   {
    "test": "copy my draft order between leagues: pull/push, merge/replace, preview, empty source disabled, persisted",
    "ok": true,
-   "ms": 6045
+   "ms": 5802
   },
   {
    "test": "data pipeline in the app: sync from L7N manifest, versions + date coverage shown, zero-GP star stays searchable with official photo id, failures visible while old data serves",
    "ok": true,
-   "ms": 8183
+   "ms": 10462
+  },
+  {
+   "test": "history: record entry, analysis charts appear, delete",
+   "ok": true,
+   "ms": 2458
   },
   {
    "test": "migration in a real browser: V4.0.21 localStorage is copied, original keys byte-identical",
    "ok": true,
-   "ms": 1783
+   "ms": 2380
   },
   {
    "test": "offline / sync failure: app still opens, says so, keeps working with saved data",
    "ok": true,
-   "ms": 2364
+   "ms": 2388
   },
   {
    "test": "service worker: app shell loads again while the network is offline (http only)",
    "ok": true,
-   "ms": 3155
+   "ms": 3148
   },
   {
    "test": "corrupt localStorage does not brick the app",
    "ok": true,
-   "ms": 1566
+   "ms": 1640
   },
   {
    "test": "mobile 390px: bottom nav, card candidates, no horizontal page overflow on any tab, touch-drag reorder",
    "ok": true,
-   "ms": 9201
+   "ms": 9496
   },
   {
    "test": "no unexpected console errors during the whole run",

@@ -1,6 +1,6 @@
 {
   "name": "l7n-fantasy-lab-next",
-  "version": "5.1.0",
+  "version": "5.4.3",
   "private": true,
   "type": "module",
   "description": "L7N H2H Fantasy Lab — NBA H2H fantasy basketball decision lab (static site, no runtime dependencies)",

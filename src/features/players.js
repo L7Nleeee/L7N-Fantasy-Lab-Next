@@ -79,10 +79,31 @@ export function createPlayersView(ctx) {
     const box = $('#pGrid');
     if (!rows.length) { box.innerHTML = emptyState('找不到符合的球員', '這不代表球員不存在：可能是資料中尚未收錄或名字拼法不同。', 'players'); return; }
     const shown = rows.slice(0, limit);
-    const body = shown.map((r) => { const x = r.p; const g = projectedGames(x, app.weeklyCtx());
-      return `<tr class="${rowClass(x)}" data-name="${esc(x.name)}"><td class="l stick s0 s-edge">${playerCell(x, { team: app.effectiveTeam(x) })}</td><td class="c">${x.yahooRank ? `<span class="rank-pill">${x.yahooRank}</span>` : '—'}</td><td class="c">${isNum(x.gp) && x.gp ? x.gp : '—'}</td><td class="c"><span class="fit ${r.tf === null ? 'na' : fitTone(r.tf)}">${r.tf === null ? '—' : r.tf.toFixed(0)}</span></td>${statCells(x, m)}<td class="c">${g.games}${g.source === 'assumed' ? '?' : ''}</td></tr>`; }).join('');
     const more = rows.length > shown.length ? `<div class="more-row"><button class="btn" data-act="more">顯示更多（${shown.length} / ${rows.length}）</button></div>` : '';
-    setHtml(box.firstElementChild?.classList?.contains('tbl-wrap') ? box.firstElementChild : (box.innerHTML = '<div class="tbl-wrap tall"></div>', box.firstElementChild), `<table class="tbl"><thead><tr><th class="l stick s0 s-edge">Player</th><th class="c">Yahoo</th><th class="c">GP</th><th class="c">Team Fit</th>${statHeads()}<th class="c">Wk 場次</th></tr></thead><tbody>${body}</tbody></table>${more}`);
+    const isMobile = window.matchMedia('(max-width: 820px)').matches;
+    if (isMobile) {
+      // Card layout for mobile: key stats in a compact grid, no horizontal scroll
+      box.innerHTML = '<div class="pcards">' + shown.map((r) => {
+        const x = r.p; const g = projectedGames(x, app.weeklyCtx());
+        const fitHtml = r.tf === null ? '<span class="fit na">—</span>' : `<span class="fit ${fitTone(r.tf)}">${r.tf.toFixed(0)}</span>`;
+        const key6 = [['PTS',x.pts],['REB',x.reb],['AST',x.ast],['3PM',x.pm3],['FG%',x.fg,true],['TOV',x.tov]];
+        const stat6 = key6.map(([l,v,isPct]) => {
+          const tone = cellTone(m, x, l === 'FG%' ? 'FG%' : l === '3PM' ? '3PM' : l);
+          return `<div class="pc-stat ${tone === 'good' ? 'good' : tone === 'bad' ? 'bad' : ''}"><small>${l}</small>${v == null ? '—' : isPct ? (v*100).toFixed(1)+'%' : v.toFixed(1)}</div>`;
+        }).join('');
+        return `<div class="pcard ${rowClass(x)}" data-name="${esc(x.name)}">
+          <div class="pcard-top">${avatarHtml(x,'md')}<div class="grow"><button class="plink" data-detail="${esc(x.name)}"><span class="nm">${esc(x.name)}</span></button>
+          <span class="psub">${esc(TEAMS[app.effectiveTeam(x)]||app.effectiveTeam(x))}${x.yahooRank?' · Yahoo #'+x.yahooRank:''}</span></div>
+          <div class="pcard-fit">${fitHtml}<span class="tiny">Fit</span></div></div>
+          <div class="pc-stats">${stat6}</div>
+          <div class="pcard-acts"><button class="btn small primary" data-act="add" data-name="${esc(x.name)}">${icon('plus',13)}加入</button><button class="btn small ghost" data-detail="${esc(x.name)}">詳細</button><span class="tiny muted">本週${g.games}場</span></div>
+        </div>`;
+      }).join('') + '</div>' + more;
+    } else {
+      const body = shown.map((r) => { const x = r.p; const g = projectedGames(x, app.weeklyCtx());
+        return `<tr class="${rowClass(x)}" data-name="${esc(x.name)}"><td class="l stick s0 s-edge">${playerCell(x, { team: app.effectiveTeam(x) })}</td><td class="c">${x.yahooRank ? `<span class="rank-pill">${x.yahooRank}</span>` : '—'}</td><td class="c">${isNum(x.gp) && x.gp ? x.gp : '—'}</td><td class="c"><span class="fit ${r.tf === null ? 'na' : fitTone(r.tf)}">${r.tf === null ? '—' : r.tf.toFixed(0)}</span></td>${statCells(x, m)}<td class="c">${g.games}${g.source === 'assumed' ? '?' : ''}</td></tr>`; }).join('');
+      setHtml(box.firstElementChild?.classList?.contains('tbl-wrap') ? box.firstElementChild : (box.innerHTML = '<div class="tbl-wrap tall"></div>', box.firstElementChild), `<table class="tbl"><thead><tr><th class="l stick s0 s-edge">Player</th><th class="c">Yahoo</th><th class="c">GP</th><th class="c">Team Fit</th>${statHeads()}<th class="c">Wk 場次</th></tr></thead><tbody>${body}</tbody></table>${more}`);
+    }
     hydrateAvatars(box, headshots); void pr;
   }
 

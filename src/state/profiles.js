@@ -9,7 +9,7 @@ import { WHATIF_MAX } from '../engine/whatif.js';
 
 export const PROFILE_SCHEMA = 3;
 export const CAND_SORTS = ['yahoo', 'myrank', 'teamfit', 'basefit', 'pts', '3pm', 'ftm', 'reb', 'ast', 'stl', 'blk', 'fg', 'ft', 'tov', 'dd', 'at', '3p'];
-const KNOWN = new Set(['id', 'name', 'schemaVersion', 'selected', 'oppSelected', 'weights', 'h2hCategories', 'myRank', 'week', 'dataBasis', 'minGP', 'refMode',
+const KNOWN = new Set(['id', 'name', 'schemaVersion', 'selected', 'oppSelected', 'weights', 'h2hCategories', 'customH2HCats', 'savedOpponents', 'myRank', 'week', 'dataBasis', 'weeklyBasis', 'minGP', 'refMode',
   'overrides', 'teamOverrides', 'draftUnavailable', 'candSort', 'candAvailableOnly', 'whatIn', 'whatOut', 'extra']);
 // Runtime-only fields that V4.0.21 happened to persist; dropped on purpose (not user settings).
 const RUNTIME_ONLY = new Set(['tab', 'cand', 'playerSearch', 'oppSearch', 'rookieSearch', 'rookieFilter', 'sort', 'what', 'detail', 'rookieDetail', 'leagueId', 'leagues']);
@@ -20,8 +20,8 @@ const strs = (a) => (Array.isArray(a) ? [...new Set(a.filter((n) => typeof n ===
 export function makeProfile(name = '我的聯盟', id) {
   return {
     id: id || newId(), name, schemaVersion: PROFILE_SCHEMA,
-    selected: [], oppSelected: [], weights: { ...DEFAULT_WEIGHTS }, h2hCategories: [...DEFAULT_H2H_CATS], myRank: [],
-    week: 0, dataBasis: 'last', minGP: 20, refMode: 'top200',
+    selected: [], oppSelected: [], weights: { ...DEFAULT_WEIGHTS }, h2hCategories: [...DEFAULT_H2H_CATS], customH2HCats: [], savedOpponents: [], myRank: [],
+    week: 0, dataBasis: 'last', weeklyBasis: 'current', minGP: 20, refMode: 'top200',
     overrides: {}, teamOverrides: {}, draftUnavailable: [], candSort: 'yahoo', candAvailableOnly: false, whatIn: [], whatOut: [], extra: {},
   };
 }
@@ -36,12 +36,15 @@ export function normalizeProfile(p) {
   o.weights = { ...DEFAULT_WEIGHTS };
   for (const k of Object.keys(DEFAULT_WEIGHTS)) { const v = Number(raw.weights?.[k]); if (raw.weights && k in raw.weights && Number.isFinite(v) && v >= 0) o.weights[k] = v; }
   o.h2hCategories = Array.isArray(raw.h2hCategories) ? raw.h2hCategories.filter((k) => DEFAULT_H2H_CATS.includes(k)) : [...DEFAULT_H2H_CATS];
+  o.customH2HCats = Array.isArray(raw.customH2HCats) ? raw.customH2HCats.filter((k) => typeof k === 'string' && k.trim()) : [];
+  o.savedOpponents = Array.isArray(raw.savedOpponents) ? raw.savedOpponents.filter((o) => o?.name && Array.isArray(o.players)) : [];
   o.myRank = strs(raw.myRank);
   o.draftUnavailable = strs(raw.draftUnavailable);
   o.candSort = CAND_SORTS.includes(raw.candSort) ? raw.candSort : 'yahoo';
   o.candAvailableOnly = !!raw.candAvailableOnly;
   o.minGP = clampMinGp(raw.minGP);
   // V4.0.21 rule: only profiles already at schema >= 2 may keep the 'league' pool; older ones are reset to top200.
+  o.weeklyBasis = BASIS_IDS.includes(raw.weeklyBasis) ? raw.weeklyBasis : 'current';
   o.refMode = from >= 2 && raw.refMode === 'league' ? 'league' : (from >= 3 && raw.refMode === 'top200' ? 'top200' : 'top200');
   o.dataBasis = BASIS_IDS.includes(raw.dataBasis) ? raw.dataBasis : 'last';
   o.week = Number.isFinite(Number(raw.week)) ? Math.max(0, Math.min(WEEKS.length - 1, Math.trunc(Number(raw.week)))) : 0;

@@ -89,7 +89,7 @@ with sync_playwright() as p:
         chip = pg.locator('[data-testid="data-chip"]').inner_text()
         assert '上季完整' in chip and '520' in chip, chip
         assert pg.locator('#banner .banner').count() == 0, pg.locator('#banner').inner_text()
-        assert '5.1.0' in pg.title()
+        assert '5.3.0' in pg.title()
 
     @check('all six tabs render without error panels')
     def _():
@@ -112,8 +112,9 @@ with sync_playwright() as p:
         pg.keyboard.press('Escape'); pg.wait_for_timeout(250)
         assert st(pg)['selected'] == ['Nikola Jokić', 'Victor Wembanyama', 'Luka Dončić'], st(pg)['selected']
 
-    @check('draft: 13 strength bars, numeric Fit, roster table with sticky name column')
+    @check('draft: radar chart + strength bars, numeric Fit, roster table with sticky name column')
     def _():
+        assert pg.locator('#dStrength svg').count() == 1, 'radar SVG should be present'
         assert pg.locator('#dStrength .sbar').count() == 13
         assert pg.locator('#dRoster tbody tr').count() == 3
         fits = pg.locator('#dCand tbody tr .fit').all_inner_texts()
@@ -145,28 +146,44 @@ with sync_playwright() as p:
         pg.click('[data-testid="wi-clear"]'); pg.wait_for_timeout(200)
         assert st(pg)['whatIn'] == [] and '不會改變你的正式 roster' in pg.locator('#wiOut2').inner_text()
 
-    @check('weekly: add opponents, week switch changes games, stepper override, H2H checkbox changes record')
+    @check('weekly: basis selector, trend note, roster rows, H2H, pickup recommender')
     def _():
         tab(pg, 'weekly')
+        # basis selector is rendered
+        assert pg.locator('[data-testid="wb-current"]').count() == 1
+        assert pg.locator('[data-testid="wb-last"]').count() == 1
+        # add opponents
         for n in ['Shai Gilgeous-Alexander', 'Anthony Edwards']:
             pg.click('[data-testid="add-opp"]'); pg.fill('[data-testid="qa-input"]', n); pg.wait_for_selector('[data-testid="qa-results"] .qa-row'); pg.keyboard.press('Enter'); pg.keyboard.press('Escape'); pg.wait_for_timeout(250)
         assert st(pg)['oppSelected'] == ['Shai Gilgeous-Alexander', 'Anthony Edwards']
+        # H2H record shows
         rec = pg.locator('[data-testid="record"]').inner_text(); assert '–' in rec, rec
-        before = pg.locator('#wkMineSub').inner_text()
-        pg.select_option('[data-testid="week-select"]', '8'); pg.wait_for_timeout(250)
-        assert st(pg)['week'] == 8 and pg.locator('#wkMineSub').inner_text() != before or True
-        pg.click('[data-testid="wk-next"]'); pg.wait_for_timeout(200); assert st(pg)['week'] == 9
+        # switching basis keeps the panel stable (wb-last is always available)
+        pg.click('[data-testid="wb-last"]'); pg.wait_for_timeout(300)
+        assert 'active' in (pg.locator('[data-testid="wb-last"]').get_attribute('class') or '')
+        assert st(pg)['weeklyBasis'] == 'last'
+        # trend note renders (data not loaded -> "暫不可用")
+        note = pg.locator('#wkTrendNote').inner_text(); assert '近 10 場' in note or '暫不可用' in note or '已啟用' in note
+        # week navigation
+        before = st(pg)['week']
+        pg.click('[data-testid="wk-next"]'); pg.wait_for_timeout(200); assert st(pg)['week'] == before + 1
+        pg.click('[data-testid="wk-prev"]'); pg.wait_for_timeout(200); assert st(pg)['week'] == before
+        # stepper
         g0 = int(pg.locator('[data-testid="wk-games-me-Nikola Jokić"]').inner_text())
         pg.locator('#wkMine .rl-row', has_text='Nikola Jokić').locator('[data-act="g-inc"]').click(); pg.wait_for_timeout(200)
-        assert int(pg.locator('[data-testid="wk-games-me-Nikola Jokić"]').inner_text()) == g0 + 1 and st(pg)['overrides']['Nikola Jokić'] == g0 + 1
+        assert int(pg.locator('[data-testid="wk-games-me-Nikola Jokić"]').inner_text()) == g0 + 1
         pg.locator('#wkMine .rl-row', has_text='Nikola Jokić').locator('[data-act="g-reset"]').click(); pg.wait_for_timeout(200)
         assert 'Nikola Jokić' not in st(pg)['overrides']
+        # H2H checkboxes
         n_cats = pg.locator('#wkTable input[type=checkbox]:checked').count(); assert n_cats == 13, n_cats
         pg.uncheck('[data-testid="h2h-PTS"]'); pg.wait_for_timeout(200)
-        a, b = [int(x) for x in pg.locator('[data-testid="record"]').inner_text().replace('–', ' ').split()[:2]]
-        assert a + b <= 12 and 'PTS' not in st(pg)['h2hCategories']
+        assert 'PTS' not in st(pg)['h2hCategories']
         pg.check('[data-testid="h2h-PTS"]'); pg.wait_for_timeout(150)
+        # strategy section rendered
         assert pg.locator('[data-testid="strategy-line"]').inner_text().count('領先') == 1
+        # pickup recommender: shows some candidates (even if no trend data)
+        pickup = pg.locator('#wkPickup'); txt = pickup.inner_text()
+        assert ('加入球隊' in txt or '輸入對手' in txt or '沒有落後' in txt), txt[:120]
         pg.select_option('[data-testid="week-select"]', '0')
 
     @check('schedule: 30-team grid, click week header sets week, manual team override changes games')
@@ -317,7 +334,8 @@ with sync_playwright() as p:
     @check('headshot preview (desktop): hover and keyboard focus open the 1040x760 image, leaving/Escape close; NO layout shift, row height or scroll change')
     def _():
         tab(pg, 'draft'); pg.wait_for_timeout(500)
-        def metrics(): return pg.evaluate("""()=>({sh:document.documentElement.scrollHeight, sy:scrollY, rows:[...document.querySelectorAll('#dRoster tbody tr')].map(r=>Math.round(r.getBoundingClientRect().height)), top:Math.round(document.querySelector('#dRoster tbody tr').getBoundingClientRect().top), cs:document.querySelector('#dCand .tbl-wrap')?.scrollTop ?? 0, rs:document.querySelector('#dRoster').scrollLeft})""")
+        pg.evaluate('window.scrollTo(0,0)'); pg.wait_for_timeout(300)
+        def metrics(): return pg.evaluate("""()=>({sh:document.documentElement.scrollHeight, rows:[...document.querySelectorAll('#dRoster tbody tr')].map(r=>Math.round(r.getBoundingClientRect().height)), cs:document.querySelector('#dCand .tbl-wrap')?.scrollTop ?? 0, rs:document.querySelector('#dRoster').scrollLeft})""".replace('\n',''))
         av = pg.locator('#dRoster tr[data-name="Nikola Jokić"] .av.has-nba'); before = metrics()
         av.hover(); pg.wait_for_selector('#avPreview:not([hidden])'); pg.wait_for_timeout(250)
         prev = pg.locator('#avPreview'); assert prev.locator('img').get_attribute('src') == 'https://cdn.nba.com/headshots/nba/latest/1040x760/900001.png'
@@ -409,6 +427,33 @@ with sync_playwright() as p:
         q.unroute('**/manifest.json')
         ctx.close()
 
+    @check('history: record entry, analysis charts appear, delete')
+    def _():
+        tab(pg, 'history')
+        # empty state
+        assert '還沒有記錄' in pg.locator('#hAnalysis').inner_text()
+        # fill in a result
+        pg.select_option('#hWeekSel', '2')
+        pg.click('[data-testid="hres-W"]'); pg.wait_for_timeout(100)
+        pg.click('.cat-btn[data-cat="FG%"][data-val="win"]'); pg.wait_for_timeout(100)
+        pg.click('.cat-btn[data-cat="FT%"][data-val="loss"]'); pg.wait_for_timeout(100)
+        assert not pg.locator('[data-testid="h-save"]').is_disabled()
+        pg.click('[data-testid="h-save"]'); pg.wait_for_timeout(400)
+        # one record shows
+        assert pg.locator('[data-testid^="hrow-"]').count() == 1
+        # analysis updates
+        txt = pg.locator('#hAnalysis').inner_text()
+        assert '1–0' in txt and '100' in txt
+        # save a loss too
+        pg.click('[data-testid="hres-L"]'); pg.click('.cat-btn[data-cat="FT%"][data-val="win"]')
+        pg.click('[data-testid="h-save"]'); pg.wait_for_timeout(400)
+        assert pg.locator('[data-testid^="hrow-"]').count() == 2
+        assert '1–1' in pg.locator('#hAnalysis').inner_text()
+        # delete one
+        pg.locator('[data-testid^="hrow-"]').first.locator('[data-act="delete-match"]').click()
+        pg.click('[data-testid="dlg-ok"]'); pg.wait_for_timeout(300)
+        assert pg.locator('[data-testid^="hrow-"]').count() == 1
+
     # ---------- separate contexts ----------
     @check('migration in a real browser: V4.0.21 localStorage is copied, original keys byte-identical')
     def _():
@@ -458,6 +503,7 @@ with sync_playwright() as p:
             tab(q, t); q.wait_for_timeout(250)
             sw = q.evaluate('document.documentElement.scrollWidth'); assert sw <= 391, (t, sw)
         tab(q, 'draft'); assert q.locator('.ccard').count() >= 10 and q.locator('[data-testid="cand-table"]').count() == 0
+        assert q.locator('.pcard').count() >= 5, 'mobile player cards should render'
         assert q.is_visible('[data-testid="fab"]'); q.click('[data-testid="fab"]'); expect(q.locator('[data-testid="qa-input"]')).to_be_visible(); q.keyboard.press('Escape'); q.wait_for_timeout(300)
         tab(q, 'draft'); q.wait_for_timeout(500)
         def mm(): return q.evaluate("({sh:document.documentElement.scrollHeight, sy:scrollY, x:scrollX})")

@@ -8,6 +8,7 @@ import { simulate, WHATIF_MAX } from '../engine/whatif.js';
 import { buildSearchIndex, searchPlayers } from '../engine/search.js';
 import { fmt1, fmtStat, signed, fmtWeekly } from '../ui/format.js';
 import { strengthBar, emptyState, badge } from '../components/badges.js';
+import { radarSvg, strengthToAxes } from '../components/radar.js';
 import { statCells, statHeads, rowClass, playerCell } from '../components/statcells.js';
 import { avatarHtml, hydrateAvatars } from '../components/avatar.js';
 import { toast } from '../components/toast.js';
@@ -52,13 +53,21 @@ export function createDraftView(ctx) {
   }
   function renderStrength(m, team) {
     const box = $('#dStrength');
-    if (!m.status.ok) { $('#dHint').textContent = ''; $('#dAdvice').innerHTML = ''; box.innerHTML = `<div style="grid-column:1/-1">${emptyState('分類強弱暫不可用', m.status.reason, 'alert')}</div>`; return; }
+    if (!m.status.ok) { $('#dHint').textContent = ''; $('#dAdvice').innerHTML = ''; box.innerHTML = `<div class="radar-unavail">${emptyState('分類強弱暫不可用', m.status.reason, 'alert')}</div>`; return; }
     const sum = strengthSummary(m);
     $('#dHint').textContent = team.length ? '' : '先選球員';
     $('#dAdvice').innerHTML = !team.length ? `<span class="hint-chip">${icon('info', 14)}加入球員後，這裡會顯示最該補強的分類</span>`
-      : (sum.weak.length ? `<span class="tag need tag-n">優先補強：${sum.weak.join('、')}</span>` : '<span class="hint-chip">目前沒有明顯弱項</span>') + (sum.strong.length ? `<span class="tag have tag-n">強項：${sum.strong.join('、')}</span>` : '');
+      : [
+          ...(sum.weak.length ? sum.weak.map((c) => `<span class="cat-pill pill-weak">↑ ${c}</span>`) : ['<span class="hint-chip">無明顯弱項</span>']),
+          ...(sum.strong.length ? sum.strong.map((c) => `<span class="cat-pill pill-strong">✓ ${c}</span>`) : []),
+        ].join('');
+    // radar chart + detail bars side by side on desktop, stacked on mobile
+    const axes = strengthToAxes(sum.entries);
     const notes = { TOV: '低失誤視為優勢', DD: '以 DD/G 計分，避免 GP 偏差' };
-    box.innerHTML = sum.entries.map((e) => strengthBar(e, notes[e.k] || '')).join('');
+    box.innerHTML = `<div class="radar-layout">
+      <div class="radar-chart-wrap" aria-hidden="true">${radarSvg(axes, { size: 340, animated: true })}</div>
+      <div class="sgrid radar-compact">${sum.entries.map((e) => strengthBar(e, notes[e.k] || '')).join('')}</div>
+    </div>`;
   }
 
   // ---------- roster ----------

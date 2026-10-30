@@ -156,8 +156,34 @@ export function createApp({ storage = createStorage(), repo, now = () => new Dat
     setMinGP(v) { commit(['settings'], (d) => { d.minGP = clampMinGp(v); }); },
     setRefMode(v) { commit(['settings'], (d) => { d.refMode = v === 'league' ? 'league' : 'top200'; }); },
     setBasis(v) { commit(['settings', 'data'], (d) => { d.dataBasis = v; }); },
+    setWeeklyBasis(v) { commit(['settings'], (d) => { d.weeklyBasis = v; }); },
+    weeklyUniverse(basis) { return repo.universe(basis || profile().weeklyBasis); },
     setWeek(w) { commit(['week'], (d) => { d.week = Math.max(0, Math.min(WEEKS.length - 1, Number(w) || 0)); }); },
     toggleH2H(cat, on) { commit(['h2h'], (d) => { const s = new Set(d.h2hCategories); on ? s.add(cat) : s.delete(cat); d.h2hCategories = [...s]; }); },
+    /** Custom H2H categories (e.g. T, TD) stored per-league. */
+    addCustomCat(cat) {
+      const c = String(cat).trim().toUpperCase().slice(0, 6);
+      if (!c) return { ok: false, error: '名稱不能為空' };
+      commit(['h2h'], (d) => { if (!d.customH2HCats.includes(c)) d.customH2HCats = [...d.customH2HCats, c]; });
+      return { ok: true, cat: c };
+    },
+    removeCustomCat(cat) { commit(['h2h'], (d) => { d.customH2HCats = d.customH2HCats.filter((c) => c !== cat); }); },
+    get allH2HCats() { const p = profile(); return [...new Set([...DEFAULT_H2H_CATS, ...p.customH2HCats])]; },
+    /** Saved opponent rosters. */
+    saveOppRoster(name, players) {
+      if (!name?.trim()) return { ok: false, error: '名稱不能為空' };
+      if (!players.length) return { ok: false, error: 'Roster 是空的' };
+      const entry = { id: 'opp_' + Date.now(), name: name.trim(), players: [...players], savedAt: now() };
+      commit(['opp'], (d) => { d.savedOpponents = [...(d.savedOpponents || []).filter((o) => o.name !== entry.name), entry]; });
+      return { ok: true, entry };
+    },
+    loadOppRoster(id) {
+      const entry = profile().savedOpponents?.find((o) => o.id === id);
+      if (!entry) return { ok: false, error: '找不到這組 Roster' };
+      commit(['opp'], (d) => { d.oppSelected = [...entry.players]; });
+      return { ok: true, entry };
+    },
+    deleteOppRoster(id) { commit(['opp'], (d) => { d.savedOpponents = (d.savedOpponents || []).filter((o) => o.id !== id); }); },
 
     // --- draft board ---
     setCandSort(k) { commit(['candui'], (d) => { d.candSort = k; }); },

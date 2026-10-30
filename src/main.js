@@ -4,6 +4,7 @@ import { createStorage } from './state/storage.js';
 import { createRepository } from './data/repository.js';
 import { createApp } from './state/app.js';
 import { createHeadshots } from './data/headshots.js';
+import { teamTotals, projectedGames, h2hRows, h2hRecord } from './engine/weekly.js';
 import { createQuickAdd } from './components/quickadd.js';
 import { initPreview } from './components/preview.js';
 import { toast } from './components/toast.js';
@@ -14,6 +15,7 @@ import { createScheduleView } from './features/schedule.js';
 import { createPlayersView } from './features/players.js';
 import { createRookiesView } from './features/rookies.js';
 import { createYahooView } from './features/yahoo.js';
+import { createHistoryView } from './features/history.js';
 import { $, $$, esc, on, raf } from './ui/dom.js';
 import { icon } from './ui/icons.js';
 import { DATA_BASES } from './engine/schema.js';
@@ -27,12 +29,14 @@ const TABS = [
   { id: 'players', label: '球員資料', short: '球員', icon: 'players' },
   { id: 'rookies', label: 'Rookie Hub', short: '新秀', icon: 'rookies' },
   { id: 'yahoo', label: 'Yahoo 排名', short: 'Yahoo', icon: 'yahoo' },
+  { id: 'history', label: '勝負歷史', short: '歷史', icon: 'star' },
 ];
 
 const storage = createStorage();
 const repo = createRepository({ storage }).init();
 const app = createApp({ storage, repo });
 const headshots = createHeadshots({ enabled: app.settings.photos !== false });
+globalThis.__weeklyEngine = { teamTotals, projectedGames, h2hRows, h2hRecord };
 initPreview();
 document.body.classList.toggle('reduce-motion', !!app.settings.reduceMotion);
 
@@ -42,7 +46,7 @@ ctx.drawer = createDrawer(ctx);
 
 const views = {
   draft: createDraftView(ctx), weekly: createWeeklyView(ctx), schedule: createScheduleView(ctx),
-  players: createPlayersView(ctx), rookies: createRookiesView(ctx), yahoo: createYahooView(ctx),
+  players: createPlayersView(ctx), rookies: createRookiesView(ctx), yahoo: createYahooView(ctx), history: createHistoryView(ctx),
 };
 ctx.showPlayer = (name) => { views.players.showDetail(name); go('players'); };
 
