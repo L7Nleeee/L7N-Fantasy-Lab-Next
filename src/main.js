@@ -147,11 +147,32 @@ if (app.boot.migrated) toast(app.boot.migrated, { level: 'ok', ms: 6000 });
 const startTab = (location.hash.match(/^#\/(\w+)/) || [])[1] || app.settings.tab;
 go(views[startTab] ? startTab : 'draft', { push: false });
 flush();
-// Background sync (never blocks the UI). Pipeline URL configured -> L7N pipeline first; the legacy remote CSV is only used while no
-// pipeline data has ever been loaded. Failures keep the last validated data.
-const legacySync = () => { const d = repo.getDataset('last'); if (!d || (d.meta.source !== 'import' && d.meta.source !== 'pipeline')) return repo.syncRemote('last'); return Promise.resolve(); };
+// Background sync on boot (never blocks the UI).
+// Priority: 1) L7N pipeline  2) custom per-basis URLs  3) legacy rx-src CSV (only when nothing else is configured)
+const legacySync = () => {
+  const d = repo.getDataset('last');
+  if (!d || (d.meta.source !== 'import' && d.meta.source !== 'pipeline')) return repo.syncRemote('last');
+  return Promise.resolve();
+};
+const customUrls = app.remoteUrls;
+const hasCustomUrls = Object.values(customUrls).some((u) => u?.trim());
 const pipelineUrl = app.settings.dataUrl;
-(pipelineUrl ? repo.syncPipeline(pipelineUrl).then((r) => (r.ok || repo.hasPipelineData() ? null : legacySync())) : legacySync()).then(() => { headerDirty = true; schedule(); });
+
+(pipelineUrl
+  ? repo.syncPipeline(pipelineUrl).then((r) => {
+      if (r.ok || repo.hasPipelineData()) {
+        if (hasCustomUrls) repo.syncCustomUrls(customUrls);   // also sync custom bases
+        return null;
+      }
+      return hasCustomUrls ? repo.syncCustomUrls(customUrls) : legacySync();
+    })
+  : hasCustomUrls
+    ? repo.syncCustomUrls(customUrls).then((r) => {
+        // if 'last' (previous season) was not in customUrls, still try legacy for it
+        if (!customUrls.last && !repo.getDataset('last')) return legacySync();
+      })
+    : legacySync()
+).then(() => { headerDirty = true; schedule(); });
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 window.__L7N = { app, repo, headshots, views, go }; // handle for tests / debugging
 void $$;

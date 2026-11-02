@@ -49,6 +49,38 @@ export function createDrawer(ctx) {
  ${err ? `<p class="tiny bad-t" style="margin:8px 0 0" data-testid="pipeline-error">這次同步沒有成功：${esc(err.message)}（${dt(err.at)}），目前沿用上次有效資料。</p>` : ''}</div>`;
   }
 
+  function remoteUrlPanel() {
+    const urls = app.remoteUrls;
+    const bases = [
+      { id: 'current', label: '本季至今 (season_current.csv)', placeholder: 'https://raw.githubusercontent.com/你的帳號/repo/main/data/season_current.csv' },
+      { id: 'recent10', label: '近 10 場 (recent10.csv)', placeholder: 'https://raw.githubusercontent.com/你的帳號/repo/main/data/recent10.csv' },
+      { id: 'recent30d', label: '近 30 天 (recent30d.csv)', placeholder: 'https://raw.githubusercontent.com/你的帳號/repo/main/data/recent30d.csv' },
+      { id: 'last', label: '上季完整 (season_previous.csv)', placeholder: 'https://raw.githubusercontent.com/你的帳號/repo/main/data/season_previous.csv' },
+    ];
+    return `<div class="dsec">
+      <h4>☁️ 雲端 CSV 自動同步</h4>
+      <p class="tiny muted" style="margin:0 0 10px">填入你 GitHub repo 上 CSV 檔案的 <b>Raw</b> 網址，App 每次開啟時會自動同步。這樣在任何裝置打開 App 都會自動抓最新數據，不用每台電腦上傳 CSV。</p>
+      <div class="url-help" style="margin-bottom:12px">
+        <span class="tiny muted">取得網址方法：GitHub → 點進 CSV 檔 → 右上角 <b>Raw</b> → 複製網址列</span>
+      </div>
+      ${bases.map((b) => `
+        <div class="field" style="margin-bottom:10px">
+          <label class="lbl">${esc(b.label)}</label>
+          <div class="row" style="flex-wrap:nowrap;gap:6px">
+            <input class="inp" data-url-basis="${esc(b.id)}" data-testid="url-${esc(b.id)}"
+              placeholder="${esc(b.placeholder)}" value="${esc(urls[b.id] || '')}"
+              autocomplete="off" spellcheck="false" style="font-size:11.5px">
+            <button class="btn small" data-act="test-url" data-basis="${esc(b.id)}" data-testid="test-url-${esc(b.id)}" title="測試並同步這個網址">測試</button>
+          </div>
+        </div>`).join('')}
+      <div class="row" style="gap:8px;margin-top:4px">
+        <button class="btn small primary" data-act="save-urls" data-testid="save-urls">${icon('check',13)}儲存網址</button>
+        <button class="btn small" data-act="sync-all-urls" data-testid="sync-all-urls">${icon('sync',13)}立即全部同步</button>
+      </div>
+      <div id="dSyncResult" class="tiny" style="margin-top:8px;min-height:18px"></div>
+    </div>`;
+  }
+
   function render() {
     const p = app.profile; const s = repo.sync; const u = app.universe();
     const syncTone = { ok: 'green', failed: 'red', syncing: 'blue', skipped: 'amber', idle: 'muted' }[s.state];
@@ -59,6 +91,7 @@ export function createDrawer(ctx) {
  <div class="row" style="margin-top:8px"><button class="btn small" data-act="share">${icon('link', 14)}分享連結</button><button class="btn small" data-act="export">${icon('download', 14)}匯出此聯盟</button><button class="btn small" data-act="export-all">匯出全部</button><button class="btn small" data-act="import-cfg">${icon('upload', 14)}匯入設定</button></div>
  <p class="tiny" style="margin:8px 0 0">每個聯盟各自保存：roster、對手、權重、資料基準、賽週、參考池、場次與球隊覆寫、我的選人順位。球員資料庫為所有聯盟共用。</p></div>
 ${pipelinePanel()}
+${remoteUrlPanel()}
 <div class="dsec"><h4>資料中心</h4><div class="row" style="margin-bottom:8px">${badge(s.state === 'idle' ? '尚未同步' : s.message || s.state, syncTone)}</div>${datasetTable()}
  <p class="tiny" style="margin:8px 0 0">目前分析用：<b>${esc(DATA_BASES[p.dataBasis].label)}</b>${u.used !== p.dataBasis ? `（實際顯示：${u.used === 'seed' ? '內建種子' : esc(DATA_BASES[u.used].label)}）` : ''}。更新本季或近 10 場資料不會覆蓋 2025-26 完整球季。匯入失敗或網路失敗時，上次成功的資料會被保留。</p></div>
 <div class="dsec"><h4>模型設定（此聯盟）</h4>
@@ -109,6 +142,36 @@ ${pipelinePanel()}
     else if (a === 'export-all') download(`${safe(PRODUCT)}_AllLeagues_v${VERSION}.json`, app.exportEverything());
     else if (a === 'import-cfg') { fileMode = { kind: 'config' }; fileInput.accept = '.json,application/json'; fileInput.click(); }
     else if (a === 'import') { fileMode = { kind: 'csv', basis: t.dataset.basis }; fileInput.accept = '.csv,text/csv,text/plain'; fileInput.click(); }
+    else if (a === 'save-urls') {
+      el.querySelectorAll('[data-url-basis]').forEach((inp) => {
+        app.setRemoteUrl(inp.dataset.urlBasis, inp.value);
+      });
+      toast('網址已儲存。下次開啟 App 會自動同步。', { level: 'ok' });
+    }
+    else if (a === 'sync-all-urls') {
+      const urls = app.remoteUrls;
+      const hasAny = Object.values(urls).some((u) => u?.trim());
+      if (!hasAny) { toast('請先填入至少一個 CSV 網址並儲存。', { level: 'warn' }); return; }
+      const res$ = $('#dSyncResult', el); res$.textContent = '同步中…';
+      el.querySelectorAll('[data-url-basis]').forEach((inp) => app.setRemoteUrl(inp.dataset.urlBasis, inp.value));
+      const r = await repo.syncCustomUrls(app.remoteUrls, { force: true });
+      const ok = r.results.filter((x) => x.ok); const fail = r.results.filter((x) => !x.ok);
+      res$.innerHTML = `${ok.map((x) => `<span class="good-t">✓ ${DATA_BASES[x.basis]?.short || x.basis}（${x.rows || 0} 人）</span>`).join('　')}${fail.map((x) => `<span class="bad-t">✗ ${DATA_BASES[x.basis]?.short || x.basis}：${esc(x.error || '失敗')}</span>`).join('　')}`;
+      render();
+    }
+    else if (a === 'test-url') {
+      const basis = t.dataset.basis;
+      const inp = el.querySelector(`[data-url-basis="${CSS.escape(basis)}"]`);
+      const url = inp?.value?.trim();
+      if (!url) { toast('請先填入網址', { level: 'warn' }); return; }
+      app.setRemoteUrl(basis, url);
+      const res$ = $('#dSyncResult', el); res$.textContent = `測試 ${DATA_BASES[basis]?.short || basis} 中…`;
+      const r = await repo.syncRemote(basis, { url, force: true });
+      res$.innerHTML = r.ok
+        ? `<span class="good-t">✓ ${DATA_BASES[basis]?.short || basis} 同步成功（${r.rows || 0} 人）</span>`
+        : `<span class="bad-t">✗ ${esc(r.error || '失敗')}</span>`;
+      render();
+    }
     else if (a === 'pipeline-sync') { const url = $('#dDataUrl', el).value.trim(); app.setSetting('dataUrl', url); if (!url) { toast('已改回沿用舊版遠端 CSV', { level: 'info' }); render(); return; } const r = await repo.syncPipeline(url, { force: true }); toast(r.ok ? (r.unchanged ? '資料已是最新' : `已同步（${r.version}）`) : `同步未成功：${r.error}`, { level: r.ok ? 'ok' : 'warn', ms: 5000 }); render(); }
     else if (a === 'sync') { const r = await repo.syncRemote('last', { force: true }); toast(r.ok ? `已同步 ${r.count} 位球員` : `同步未成功：${r.error || ''}，已保留原本資料`, { level: r.ok ? 'ok' : 'warn' }); render(); }
     else if (a === 'clear-ds') { if (await askConfirm({ title: '清除這份資料？', text: `${DATA_BASES[t.dataset.basis].label} 的資料會從這個瀏覽器移除（其他資料集不受影響）。`, ok: '清除', danger: true })) { repo.clearDataset(t.dataset.basis); render(); } }

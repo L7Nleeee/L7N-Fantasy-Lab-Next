@@ -112,6 +112,8 @@ export function createApp({ storage = createStorage(), repo, now = () => new Dat
     h2hSet: () => new Set(profile().h2hCategories),
 
     setSetting(key, value) { settings = { ...settings, [key]: value }; storage.setJSON('settings', settings); emit(['ui']); },
+    get remoteUrls() { return settings.remoteUrls || {}; },
+    setRemoteUrl(basis, url) { const u = { ...(settings.remoteUrls||{}) }; if (url?.trim()) u[basis]=url.trim(); else delete u[basis]; settings={...settings,remoteUrls:u}; storage.setJSON('settings',settings); emit(['ui']); },
 
     // --- leagues ---
     addLeague(name) {

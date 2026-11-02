@@ -178,6 +178,19 @@ export function createRepository({ storage, now = () => new Date().toISOString()
         return { ok: false, error: String(e.message || e) };
       }
     },
+    /**
+     * Sync one or more bases from the user's custom GitHub raw URLs.
+     * Returns {ok, results:[{basis, ok, rows, error}]}
+     */
+    async syncCustomUrls(urlMap, { fetchImpl = globalThis.fetch, timeoutMs = 12000, force = false } = {}) {
+      const results = [];
+      for (const [basis, url] of Object.entries(urlMap)) {
+        if (!url?.trim()) continue;
+        const r = await this.syncRemote(basis, { fetchImpl, url: url.trim(), timeoutMs, force });
+        results.push({ basis, ...r });
+      }
+      return { ok: results.every((r) => r.ok), results };
+    },
     hasPipelineData() { return BASIS_IDS.some((b) => datasets[b]?.meta?.source === 'pipeline'); },
     clearDataset(basis) { storage.remove(`datasets.${basis}`); datasets[basis] = null; emit(); },
     universe(basis) { return buildUniverse(datasets, basis, registry); },
