@@ -5,7 +5,13 @@ import { buildUniverse } from './universe.js';
 import { BASIS_IDS, DATA_BASES } from '../engine/schema.js';
 import { normalizeName, num } from '../engine/util.js';
 
-export const DEFAULT_BASELINE_URL = 'https://raw.githubusercontent.com/rx-src/nba-analysis/main/nba_player_stats_2026.csv';
+export const DEFAULT_BASELINE_URL = 'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/season_previous.csv';
+export const DEFAULT_REMOTE_URLS = Object.freeze({
+  last:     'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/season_previous.csv',
+  current:  'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/season_current.csv',
+  recent10: 'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/recent10.csv',
+  recent30d:'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/recent30d.csv',
+});
 export const MIN_IMPORT_ROWS = 20;
 export const MIN_REMOTE_ROWS = 400;
 const LEGACY = { last: 'fb_custom_dataset_last', current: 'fb_custom_dataset_current', recent10: 'fb_custom_dataset_recent10' };
@@ -101,7 +107,7 @@ export function createRepository({ storage, now = () => new Date().toISOString()
         const text = await res.text();
         const parsed = recordsFromCsv(text, { allowBuiltinDd: basis === 'last' });
         if (parsed.errors.length) throw new Error(parsed.errors.join(' '));
-        const out = commitDataset(basis, parsed.records, { source: 'remote', sourceLabel: '遠端資料同步（rx-src/nba-analysis）', url, mode: parsed.mode }, minRows);
+        const out = commitDataset(basis, parsed.records, { source: 'remote', sourceLabel: `遠端資料同步（${url}）`, url, mode: parsed.mode }, minRows);
         if (!out.ok) throw new Error(out.error);
         setSync('ok', `已同步 ${out.count} 位球員。`);
         return out;

@@ -59,7 +59,7 @@ export function createDrawer(ctx) {
     ];
     return `<div class="dsec">
       <h4>☁️ 雲端 CSV 自動同步</h4>
-      <p class="tiny muted" style="margin:0 0 10px">填入你 GitHub repo 上 CSV 檔案的 <b>Raw</b> 網址，App 每次開啟時會自動同步。這樣在任何裝置打開 App 都會自動抓最新數據，不用每台電腦上傳 CSV。</p>
+      <p class="tiny muted" style="margin:0 0 10px">已預設同步你的 GitHub（<b>L7Nleeee/L7N-Fantasy-Lab-Next</b>）data/ 資料夾。任何裝置打開 App 都會自動抓最新數據。如果你有其他網址，可以在下方覆蓋預設值。</p>
       <div class="url-help" style="margin-bottom:12px">
         <span class="tiny muted">取得網址方法：GitHub → 點進 CSV 檔 → 右上角 <b>Raw</b> → 複製網址列</span>
       </div>
@@ -68,7 +68,7 @@ export function createDrawer(ctx) {
           <label class="lbl">${esc(b.label)}</label>
           <div class="row" style="flex-wrap:nowrap;gap:6px">
             <input class="inp" data-url-basis="${esc(b.id)}" data-testid="url-${esc(b.id)}"
-              placeholder="${esc(b.placeholder)}" value="${esc(urls[b.id] || '')}"
+              placeholder="${esc(b.placeholder)}" placeholder="${esc(DEFAULT_REMOTE_URLS[b.id] || b.placeholder)}" value="${esc(urls[b.id] || '')}"
               autocomplete="off" spellcheck="false" style="font-size:11.5px">
             <button class="btn small" data-act="test-url" data-basis="${esc(b.id)}" data-testid="test-url-${esc(b.id)}" title="測試並同步這個網址">測試</button>
           </div>

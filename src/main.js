@@ -154,24 +154,18 @@ const legacySync = () => {
   if (!d || (d.meta.source !== 'import' && d.meta.source !== 'pipeline')) return repo.syncRemote('last');
   return Promise.resolve();
 };
-const customUrls = app.remoteUrls;
-const hasCustomUrls = Object.values(customUrls).some((u) => u?.trim());
+// Merge: built-in GitHub defaults + any per-basis user overrides
+const savedUrls = app.remoteUrls;
+const customUrls = { ...DEFAULT_REMOTE_URLS, ...Object.fromEntries(Object.entries(savedUrls).filter(([,v])=>v?.trim())) };
 const pipelineUrl = app.settings.dataUrl;
 
 (pipelineUrl
   ? repo.syncPipeline(pipelineUrl).then((r) => {
-      if (r.ok || repo.hasPipelineData()) {
-        if (hasCustomUrls) repo.syncCustomUrls(customUrls);   // also sync custom bases
-        return null;
-      }
-      return hasCustomUrls ? repo.syncCustomUrls(customUrls) : legacySync();
+      // also sync custom-basis CSVs alongside the pipeline
+      repo.syncCustomUrls(customUrls).then(() => { headerDirty = true; schedule(); });
+      return r;
     })
-  : hasCustomUrls
-    ? repo.syncCustomUrls(customUrls).then((r) => {
-        // if 'last' (previous season) was not in customUrls, still try legacy for it
-        if (!customUrls.last && !repo.getDataset('last')) return legacySync();
-      })
-    : legacySync()
+  : repo.syncCustomUrls(customUrls)
 ).then(() => { headerDirty = true; schedule(); });
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 window.__L7N = { app, repo, headshots, views, go }; // handle for tests / debugging
