@@ -6,7 +6,7 @@ import { askText, askConfirm } from '../components/dialog.js';
 import { toast } from '../components/toast.js';
 import { VERSION, PRODUCT } from '../version.js';
 import { badge } from '../components/badges.js';
-import { pipelineFreshness } from '../data/repository.js';
+import { pipelineFreshness, DEFAULT_REMOTE_URLS } from '../data/repository.js';
 import { encodeShare } from '../state/profiles.js';
 
 const dt = (s) => { if (!s) return '—'; try { return new Date(s).toLocaleString('zh-TW', { hour12: false }); } catch { return s; } };
@@ -68,7 +68,7 @@ export function createDrawer(ctx) {
           <label class="lbl">${esc(b.label)}</label>
           <div class="row" style="flex-wrap:nowrap;gap:6px">
             <input class="inp" data-url-basis="${esc(b.id)}" data-testid="url-${esc(b.id)}"
-              placeholder="${esc(b.placeholder)}" placeholder="${esc(DEFAULT_REMOTE_URLS[b.id] || b.placeholder)}" value="${esc(urls[b.id] || '')}"
+              placeholder="${esc(DEFAULT_REMOTE_URLS[b.id] || b.placeholder)}" value="${esc(urls[b.id] || '')}"
               autocomplete="off" spellcheck="false" style="font-size:11.5px">
             <button class="btn small" data-act="test-url" data-basis="${esc(b.id)}" data-testid="test-url-${esc(b.id)}" title="測試並同步這個網址">測試</button>
           </div>

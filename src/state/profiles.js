@@ -2,7 +2,7 @@
 //   schemaVersion 1: legacy single-league keys (fb_*)  — migrated by migrateLegacyKeys()
 //   schemaVersion 2: V4.0.21 profiles in l7n_h2h_leagues_v1
 //   schemaVersion 3: this app
-import { DEFAULT_WEIGHTS, DEFAULT_H2H_CATS, BASIS_IDS, clampMinGp } from '../engine/schema.js';
+import { DEFAULT_WEIGHTS, DEFAULT_H2H_CATS, BASIS_IDS, clampMinGp, smartDefaultMinGP } from '../engine/schema.js';
 import { TEAMS } from '../data/static/teams.js';
 import { WEEKS } from '../data/static/schedule.js';
 import { WHATIF_MAX } from '../engine/whatif.js';
@@ -21,7 +21,7 @@ export function makeProfile(name = '我的聯盟', id) {
   return {
     id: id || newId(), name, schemaVersion: PROFILE_SCHEMA,
     selected: [], oppSelected: [], weights: { ...DEFAULT_WEIGHTS }, h2hCategories: [...DEFAULT_H2H_CATS], customH2HCats: [], savedOpponents: [], myRank: [],
-    week: 0, dataBasis: 'last', weeklyBasis: 'current', minGP: 20, refMode: 'top200',
+    week: 0, dataBasis: 'last', weeklyBasis: 'current', minGP: smartDefaultMinGP(), refMode: 'top200',
     overrides: {}, teamOverrides: {}, draftUnavailable: [], candSort: 'yahoo', candAvailableOnly: false, whatIn: [], whatOut: [], extra: {},
   };
 }
@@ -42,7 +42,7 @@ export function normalizeProfile(p) {
   o.draftUnavailable = strs(raw.draftUnavailable);
   o.candSort = CAND_SORTS.includes(raw.candSort) ? raw.candSort : 'yahoo';
   o.candAvailableOnly = !!raw.candAvailableOnly;
-  o.minGP = clampMinGp(raw.minGP);
+  o.minGP = clampMinGp(raw.minGP ?? smartDefaultMinGP());
   // V4.0.21 rule: only profiles already at schema >= 2 may keep the 'league' pool; older ones are reset to top200.
   o.weeklyBasis = BASIS_IDS.includes(raw.weeklyBasis) ? raw.weeklyBasis : 'current';
   o.refMode = from >= 2 && raw.refMode === 'league' ? 'league' : (from >= 3 && raw.refMode === 'top200' ? 'top200' : 'top200');
@@ -68,7 +68,7 @@ export function migrateLegacyKeys(read) {
     name: '我的聯盟', schemaVersion: 1,
     selected: j('fb_final_team', []), oppSelected: j('fb_opp_team', []), weights: j('fb_weights', {}),
     overrides: j('fb_final_overrides', {}), teamOverrides: j('fb_team_overrides', {}),
-    dataBasis: read('fb_data_basis') || 'last', week: Number(read('fb_week') || 0) || 0, minGP: Math.max(20, Number(read('fb_min_gp') || 20) || 20),
+    dataBasis: read('fb_data_basis') || 'last', week: Number(read('fb_week') || 0) || 0, minGP: Math.max(smartDefaultMinGP(), Number(read('fb_min_gp') || smartDefaultMinGP()) || smartDefaultMinGP()),
     refMode: read('fb_ref_mode') || 'league',
   });
 }

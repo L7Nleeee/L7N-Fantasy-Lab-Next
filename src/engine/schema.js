@@ -81,4 +81,12 @@ export const RULES = Object.freeze({
   closeRel: 0.03,         // UI-only "接近" tag threshold for H2H gaps (does not change win/loss)
 });
 
-export const clampMinGp = (v) => Math.max(RULES.minGpFloor, Math.min(RULES.maxGp, Number(v) || RULES.minGpFloor));
+/** Season-aware minGP default: low early in Oct/Nov, scales up as games accumulate. */
+export function smartDefaultMinGP() {
+  const m = new Date().getUTCMonth() + 1;  // 1-12
+  if (m === 10 || m === 11) return 3;
+  if (m === 12) return 5;
+  if (m === 1)  return 8;
+  return 12;
+}
+export const clampMinGp = (v) => Math.max(1, Math.min(RULES.maxGp, Number(v) || smartDefaultMinGP()));
