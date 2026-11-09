@@ -67,7 +67,7 @@ function renderHeader() {
   $('#top').innerHTML = `<div class="brand"><img src="assets/l7n-logo.png" alt="L7N" width="34" height="34"><div class="brand-t"><b>${PRODUCT}</b><small>v${VERSION} · 2026-27 Season</small></div></div><div class="top-sp"></div>
 <button class="chip" data-act="search" data-testid="open-search" aria-label="搜尋球員">${icon('players', 16)}<span class="hide-m">搜尋球員</span><span class="kbd hide-m">/</span></button>
 <button class="chip chip-league" data-act="drawer" data-testid="league-chip" title="目前聯盟（點擊管理）">${icon('league', 16)}<span>${esc(p.name)}</span></button>
-<button class="chip chip-data" data-act="drawer" data-testid="data-chip" title="${esc((u.meta?.sourceLabel || '') + (fr ? ' · ' + fr.text : ''))}"><i class="dot ${dot}"></i><span class="lbl">${esc(label)} · </span><span>${u.counts.withStats} 人</span></button>
+<button class="chip chip-data" data-act="drawer" data-testid="data-chip" title="${esc((u.meta?.sourceLabel || '') + (fr ? ' · ' + fr.text : '') + (repo.sync.message ? ' · ' + repo.sync.message : ''))}"><i class="dot ${dot}"></i><span class="lbl">${esc(label)} · </span><span>${u.counts.withStats} 人</span></button>
 <button class="icon-btn" data-act="drawer" data-testid="open-drawer" aria-label="控制中心">${icon('gear', 20)}</button>
 <button class="icon-btn" data-act="help" aria-label="使用說明" data-testid="open-help">${icon('help', 20)}</button>`;
   headerDirty = false;
@@ -154,19 +154,25 @@ const legacySync = () => {
   if (!d || (d.meta.source !== 'import' && d.meta.source !== 'pipeline')) return repo.syncRemote('last');
   return Promise.resolve();
 };
-// Merge: built-in GitHub defaults + any per-basis user overrides
+// ── Boot sync: always fetch all four CSVs from GitHub on every launch ──
+// Priority: user-saved URL > DEFAULT_REMOTE_URLS.  Pipeline (if configured) runs in parallel.
 const savedUrls = app.remoteUrls;
-const customUrls = { ...DEFAULT_REMOTE_URLS, ...Object.fromEntries(Object.entries(savedUrls).filter(([,v])=>v?.trim())) };
+const bootUrls = {
+  ...DEFAULT_REMOTE_URLS,
+  ...Object.fromEntries(Object.entries(savedUrls).filter(([, v]) => v?.trim())),
+};
 const pipelineUrl = app.settings.dataUrl;
 
-(pipelineUrl
-  ? repo.syncPipeline(pipelineUrl).then((r) => {
-      // also sync custom-basis CSVs alongside the pipeline
-      repo.syncCustomUrls(customUrls).then(() => { headerDirty = true; schedule(); });
-      return r;
-    })
-  : repo.syncCustomUrls(customUrls)
-).then(() => { headerDirty = true; schedule(); });
+// Fire both independently; each failure keeps the last good data.
+// headerDirty is set once both have settled so the UI reloads only once.
+let settled = 0;
+const onSettled = () => { settled++; if (settled >= 2 || !pipelineUrl) { headerDirty = true; schedule(); } };
+
+// 1. Always sync from GitHub CSVs (force=true, cache-busting inside syncCustomUrls)
+repo.syncCustomUrls(bootUrls).then(onSettled);
+
+// 2. If the L7N data pipeline is also configured, run it too
+if (pipelineUrl) { repo.syncPipeline(pipelineUrl).then(onSettled); } else { settled = 1; }
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 window.__L7N = { app, repo, headshots, views, go }; // handle for tests / debugging
 void $$;

@@ -337,3 +337,9 @@ body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after 
 .actual-card b { font-size: 16px; font-weight: 800; color: var(--blue); }
 #hDetailOverlay .tbl td, #hDetailOverlay .tbl th { padding: 7px 10px; }
 @media (max-width: 820px) { .stat-entry-row { grid-template-columns: 70px 1fr 1fr; } .actual-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); } }
+
+/* ---------- saved opp chip inline × (v5.6) ---------- */
+.opp-chip-wrap { display: inline-flex; align-items: center; gap: 0; border-radius: 999px; border: 1px solid var(--line2); background: rgba(58,160,255,.1); overflow: hidden; }
+.opp-chip-wrap .opp-chip { border: none; border-radius: 0; background: transparent; }
+.opp-chip-wrap .opp-rm { width: 22px; height: 26px; padding: 0; border: none; border-left: 1px solid var(--line2); border-radius: 0; background: transparent; color: var(--muted); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.opp-chip-wrap .opp-rm:hover { background: rgba(251,113,133,.2); color: var(--bad); }

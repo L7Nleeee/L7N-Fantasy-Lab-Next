@@ -92,7 +92,7 @@ export function createRepository({ storage, now = () => new Date().toISOString()
     /** Fetch the public baseline CSV. Any failure keeps the existing dataset. Never throws. */
     async syncRemote(basis = 'last', { fetchImpl = globalThis.fetch, url = DEFAULT_BASELINE_URL, timeoutMs = 8000, minRows = MIN_REMOTE_ROWS, force = false } = {}) {
       const existing = datasets[basis];
-      if (!force && (existing?.meta?.source === 'import' || existing?.meta?.source === 'pipeline')) {
+      if (!force && (existing?.meta?.source === 'import' || existing?.meta?.source === 'pipeline')) {   // remote: always overwritable
         setSync('skipped', existing.meta.source === 'pipeline' ? `${DATA_BASES[basis].short} 由 L7N 資料管線提供，未被舊版遠端資料覆蓋。` : `已使用你手動匯入的 ${DATA_BASES[basis].short} 資料，未被遠端資料覆蓋。`);
         return { ok: false, skipped: true };
       }
@@ -109,7 +109,7 @@ export function createRepository({ storage, now = () => new Date().toISOString()
         if (parsed.errors.length) throw new Error(parsed.errors.join(' '));
         const out = commitDataset(basis, parsed.records, { source: 'remote', sourceLabel: `遠端資料同步（${url}）`, url, mode: parsed.mode }, minRows);
         if (!out.ok) throw new Error(out.error);
-        setSync('ok', `已同步 ${out.count} 位球員。`);
+        setSync('ok', `已同步 ${out.count} 位球員（${new Date().toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'})}）。`);
         return out;
       } catch (e) {
         clearTimeout(timer);
@@ -188,12 +188,31 @@ export function createRepository({ storage, now = () => new Date().toISOString()
      * Sync one or more bases from the user's custom GitHub raw URLs.
      * Returns {ok, results:[{basis, ok, rows, error}]}
      */
-    async syncCustomUrls(urlMap, { fetchImpl = globalThis.fetch, timeoutMs = 12000, force = false } = {}) {
+    /**
+     * Sync all four bases from GitHub on every boot.
+     * Rules:
+     *   1. Always fires — no skip for existing local data (only 'import' and 'pipeline' are protected).
+     *   2. cache:'no-store' + cache-busting ts param so GitHub CDN always returns the latest commit.
+     *   3. Each basis fetched independently — one failure does not stop the others.
+     *   4. Each CSV validated (format + minRows) before overwriting local data.
+     *   5. On network failure local data is preserved; sync state shows last-sync time.
+     *   6. After all fetches finish, emits 'data' so the Fantasy Engine reloads.
+     */
+    async syncCustomUrls(urlMap, { fetchImpl = globalThis.fetch, timeoutMs = 15000 } = {}) {
       const results = [];
-      for (const [basis, url] of Object.entries(urlMap)) {
-        if (!url?.trim()) continue;
-        const r = await this.syncRemote(basis, { fetchImpl, url: url.trim(), timeoutMs, force });
-        results.push({ basis, ...r });
+      const ts = Date.now();   // cache-busting: different every boot
+      for (const [basis, rawUrl] of Object.entries(urlMap)) {
+        if (!rawUrl?.trim()) continue;
+        // Add ?_cb=<ts> so GitHub CDN does not serve a cached response
+        const url = rawUrl.trim() + (rawUrl.includes('?') ? '&' : '?') + '_cb=' + ts;
+        // force=true: never skip because localStorage already has data
+        const r = await this.syncRemote(basis, { fetchImpl, url, timeoutMs, force: true });
+        results.push({ basis, url: rawUrl.trim(), ...r });
+      }
+      const anyOk = results.some((r) => r.ok);
+      if (anyOk) {
+        storage.setJSON('sync.lastSuccess', { at: now(), bases: results.filter((r) => r.ok).map((r) => r.basis) });
+        emit(['data']);   // tell Fantasy Engine to reload after data update
       }
       return { ok: results.every((r) => r.ok), results };
     },

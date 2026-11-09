@@ -145,8 +145,7 @@ export function createWeeklyView(ctx) {
     if (!saved.length) { box.innerHTML = '<p class="tiny muted" style="margin:4px 0">還沒有儲存的對手 Roster。輸入對手球員後按「儲存此對手」。</p>'; return; }
     box.innerHTML = '<div class="saved-opps-bar">'
       + '<span class="tiny muted" style="white-space:nowrap">已儲存：</span>'
-      + saved.map((o) => `<button class="opp-chip" data-load="${esc(o.id)}" title="載入 ${esc(o.name)}（${o.players.length}人）" data-testid="load-opp-${esc(o.name)}">${esc(o.name)} <span class="dim">${o.players.length}人</span></button>`).join('')
-      + saved.map((o) => `<button class="icon-btn opp-rm" data-rm-opp="${esc(o.id)}" title="刪除 ${esc(o.name)}" aria-label="刪除 ${esc(o.name)}" style="width:22px;height:22px;font-size:11px">×</button>`).join('')
+      + saved.map((o) => `<span class="opp-chip-wrap"><button class="opp-chip" data-load="${esc(o.id)}" title="載入 ${esc(o.name)}（${o.players.length}人）" data-testid="load-opp-${esc(o.name)}">${esc(o.name)} <span class="dim">${o.players.length}人</span></button><button class="opp-rm" data-rm-opp="${esc(o.id)}" title="刪除 ${esc(o.name)}" aria-label="刪除 ${esc(o.name)}">×</button></span>`).join('')
       + '</div>';
   }
 
