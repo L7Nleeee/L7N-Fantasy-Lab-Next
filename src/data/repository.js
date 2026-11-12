@@ -101,7 +101,7 @@ export function createRepository({ storage, now = () => new Date().toISOString()
       const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
       const timer = setTimeout(() => ctl?.abort(), timeoutMs);
       try {
-        const res = await fetchImpl(url, { signal: ctl?.signal, cache: 'no-store' });
+        const res = await fetchImpl(url, { signal: ctl?.signal, cache: 'no-store', headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache, no-store, must-revalidate' } });
         clearTimeout(timer);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const text = await res.text();
@@ -210,11 +210,27 @@ export function createRepository({ storage, now = () => new Date().toISOString()
         results.push({ basis, url: rawUrl.trim(), ...r });
       }
       const anyOk = results.some((r) => r.ok);
+      const anyFail = results.some((r) => !r.ok);
       if (anyOk) {
-        storage.setJSON('sync.lastSuccess', { at: now(), bases: results.filter((r) => r.ok).map((r) => r.basis) });
-        emit(['data']);   // tell Fantasy Engine to reload after data update
+        const syncAt = now();
+        storage.setJSON('sync.lastSuccess', {
+          at: syncAt,
+          bases: results.filter((r) => r.ok).map((r) => ({ basis: r.basis, rows: r.rows })),
+        });
+        emit(['data']);
       }
-      return { ok: results.every((r) => r.ok), results };
+      // Show clear status: which bases succeeded, which failed, last sync time
+      const okBases = results.filter((r) => r.ok).map((r) => r.basis);
+      const failBases = results.filter((r) => !r.ok).map((r) => `${r.basis}（${r.error||'失敗'}）`);
+      const timeStr = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+      if (!anyFail) {
+        setSync('ok', `資料已同步（${timeStr}）：${okBases.join('、')}，共 ${results.reduce((s,r)=>s+(r.rows||0),0)} 人`);
+      } else if (anyOk) {
+        setSync('warn', `部分同步（${timeStr}）：${okBases.join('、')} 成功；${failBases.join('、')} 失敗，使用快取資料`);
+      } else {
+        setSync('failed', `網路同步失敗（${timeStr}），目前使用快取資料，尚未取得最新版本`);
+      }
+      return { ok: !anyFail, results };
     },
     hasPipelineData() { return BASIS_IDS.some((b) => datasets[b]?.meta?.source === 'pipeline'); },
     clearDataset(basis) { storage.remove(`datasets.${basis}`); datasets[basis] = null; emit(); },
