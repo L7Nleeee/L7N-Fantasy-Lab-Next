@@ -52,10 +52,11 @@ export function createDrawer(ctx) {
   function remoteUrlPanel() {
     const urls = app.remoteUrls;
     const bases = [
-      { id: 'current', label: '本季至今 (season_current.csv)', placeholder: 'https://raw.githubusercontent.com/你的帳號/repo/main/data/season_current.csv' },
-      { id: 'recent10', label: '近 10 場 (recent10.csv)', placeholder: 'https://raw.githubusercontent.com/你的帳號/repo/main/data/recent10.csv' },
-      { id: 'recent30d', label: '近 30 天 (recent30d.csv)', placeholder: 'https://raw.githubusercontent.com/你的帳號/repo/main/data/recent30d.csv' },
-      { id: 'last', label: '上季完整 (season_previous.csv)', placeholder: 'https://raw.githubusercontent.com/你的帳號/repo/main/data/season_previous.csv' },
+      { id: 'current',  label: '本季至今 (season_current.csv)',  placeholder: 'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/season_current.csv' },
+      { id: 'recent5',  label: '近 5 場 (recent5.csv)',             placeholder: 'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/recent5.csv' },
+      { id: 'recent10', label: '近 10 場 (recent10.csv)',            placeholder: 'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/recent10.csv' },
+      { id: 'recent30d',label: '近 30 天 (recent30d.csv)',           placeholder: 'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/recent30d.csv' },
+      { id: 'last',     label: '上季完整 (season_previous.csv)',     placeholder: 'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/season_previous.csv' },
     ];
     return `<div class="dsec">
       <h4>☁️ 雲端 CSV 自動同步</h4>

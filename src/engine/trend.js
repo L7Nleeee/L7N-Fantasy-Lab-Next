@@ -45,6 +45,10 @@ export function trendSummary(trends) {
   return { pos: pos.slice(0, 2), neg: neg.slice(0, 1), hasData: trends.length > 0 };
 }
 
+// A player must have played at least this many games in the RECENT window
+// before we trust their trend tag. Prevents 1-3 game flukes showing as "爆發".
+const MIN_TREND_GP = 5;
+
 /** Build a Map<name, {trends, summary, overallTag}> for a list of players, given two universes. */
 export function buildTrendMap(players, recentUniverse, baselineUniverse) {
   const byName = (u) => new Map((u?.players ?? []).map((p) => [p.name, p]));
@@ -53,6 +57,8 @@ export function buildTrendMap(players, recentUniverse, baselineUniverse) {
   for (const p of players) {
     const r = rec.get(p.name); const b = base.get(p.name);
     if (!r?.pts || !b?.pts) { result.set(p.name, null); continue; }
+    // Gate: not enough recent games → no trend tag (avoids small-sample noise)
+    if ((r.gp ?? 0) < MIN_TREND_GP) { result.set(p.name, null); continue; }
     const trends = playerTrend(r, b);
     const summary = trendSummary(trends);
     const surges = trends.filter((t) => t.tag === 'surge');

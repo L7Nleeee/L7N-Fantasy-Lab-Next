@@ -9,7 +9,7 @@ import { emptyState, badge, rookieBadge, statusBadge } from '../components/badge
 import { avatarHtml, hydrateAvatars } from '../components/avatar.js';
 import { WEEKS } from '../data/static/schedule.js';
 import { TEAMS } from '../data/static/teams.js';
-import { isNum } from '../engine/util.js';
+import { isNum, normalizeName } from '../engine/util.js';
 
 const gapText = (key, gap) => {
   if (!isNum(gap)) return '—';
@@ -17,7 +17,7 @@ const gapText = (key, gap) => {
   return signed(gap, key === 'AT' ? 2 : 1);
 };
 
-const BASIS_OPTS = ['current', 'recent10', 'recent30d', 'last'];
+const BASIS_OPTS = ['current', 'recent5', 'recent10', 'recent30d', 'last'];
 
 export function createWeeklyView(ctx) {
   const { app, headshots } = ctx;
@@ -62,23 +62,28 @@ export function createWeeklyView(ctx) {
     const hasRecent10 = !!app.repo.getDataset('recent10');
     const hasCurrent  = !!app.repo.getDataset('current');
     $('#wkBasisBtns').innerHTML = BASIS_OPTS.map((b) => {
-      const d = DATA_BASES[b]; const available = !!app.repo.getDataset(b);
+      const d = DATA_BASES[b]; if (!d) return ''; const available = !!app.repo.getDataset(b);
       const tip = !available ? '（尚未載入）' : '';
       return `<button class="seg ${wb === b ? 'active' : ''}" data-basis="${b}" ${!available ? 'disabled title="尚未載入這份資料"' : ''} data-testid="wb-${b}">${d.short}${tip}</button>`;
     }).join('');
     const note = $('#wkTrendNote');
-    const canTrend = hasRecent10 && hasCurrent;
+    const hasR5 = !!app.repo.getDataset('recent5');
+    const canTrend = (hasR5 || hasRecent10) && hasCurrent;
+    const trendWindow = hasR5 ? '近 5 場' : '近 10 場';
     note.innerHTML = canTrend
-      ? `<span class="badge b-green">${icon('check', 13)} 近況標籤已啟用</span> <span class="tiny">近 10 場 vs 本季至今的差值：↑ ≥10% = 上揚，🔥 ≥25% = 爆發；↓ ≤-10% = 下滑，🧊 ≤-25% = 低潮。<b>同時載入「本季至今」與「近 10 場」資料即可使用。</b></span>`
-      : `<span class="badge b-amber">近況標籤暫不可用</span> <span class="tiny">請在控制中心同時載入「本季至今」與「近 10 場」資料，才能顯示球員近況標籤。</span>`;
+      ? `<span class="badge b-green">${icon('check', 13)} 近況標籤已啟用（${trendWindow} vs 本季至今）</span> <span class="tiny">差值 ↑ ≥10% = 上揚，🔥 ≥25% = 爆發；↓ ≤-10% = 下滑，🧊 ≤-25% = 低潮。球員需出賽 ≥5 場才顯示標籤。</span>`
+      : `<span class="badge b-amber">近況標籤暫不可用</span> <span class="tiny">請載入「本季至今」與「近 5 場」（或「近 10 場」）資料才能顯示近況標籤。</span>`;
   }
 
   // ---- trend map ----
   function getTrendMap(names) {
+    // Prefer recent5 for trend comparison (smaller window = more current signal)
+    // Fall back to recent10 if recent5 not loaded
+    const hasR5  = !!app.repo.getDataset('recent5');
     const hasR10 = !!app.repo.getDataset('recent10');
     const hasCur = !!app.repo.getDataset('current');
-    if (!hasR10 || !hasCur) return new Map();
-    const recentU   = app.repo.universe('recent10');
+    if ((!hasR5 && !hasR10) || !hasCur) return new Map();
+    const recentU   = app.repo.universe(hasR5 ? 'recent5' : 'recent10');
     const baselineU = app.repo.universe('current');
     const players = names.map((n) => app.playerByName(n)).filter(Boolean);
     return buildTrendMap(players, recentU, baselineU);
@@ -110,13 +115,22 @@ export function createWeeklyView(ctx) {
     const box = $('#wkPickup');
     const wb = app.profile.weeklyBasis;
     const u = app.repo.universe(wb);
-    const myNames = new Set(app.profile.selected);
-    const oppNames = new Set(app.profile.oppSelected);
-    const candidates = u.players.filter((p) =>
-      !myNames.has(p.name) && !oppNames.has(p.name) &&
-      (p.status === 'ok' || p.status === 'projection') &&
-      isNum(p.pts)
+    // Use normalized names for all exclusion checks to handle accent/case differences
+    // e.g. "Luka Dončić" in selected vs "Luka Doncic" in universe
+    const myNames = new Set(app.profile.selected.map(normalizeName));
+    const oppNames = new Set(app.profile.oppSelected.map(normalizeName));
+    const allLeagueNames = new Set(
+      (app.allProfiles || []).flatMap((prof) => [
+        ...(prof.selected || []).map(normalizeName),
+        ...(prof.oppSelected || []).map(normalizeName),
+      ])
     );
+    const candidates = u.players.filter((p) => {
+      const nk = normalizeName(p.name);
+      return !myNames.has(nk) && !oppNames.has(nk) && !allLeagueNames.has(nk) &&
+        (p.status === 'ok' || p.status === 'projection') &&
+        isNum(p.pts);
+    });
     if (!candidates.length) { box.innerHTML = emptyState('候選球員池是空的', '請先載入球員統計資料。', 'players'); return; }
     if (!lossCats.length) { box.innerHTML = `<p class="muted">目前沒有落後的 H2H 分類，無需推薦補強。</p>`; return; }
 
@@ -150,7 +164,10 @@ export function createWeeklyView(ctx) {
   }
 
   function render() {
-    const p = app.profile; const wb = p.weeklyBasis; const wctx = app.weeklyCtx();
+    const p = app.profile;
+    // Guard: if weeklyBasis is not a valid DATA_BASES key, fall back to 'current'
+    const wb = DATA_BASES[p.weeklyBasis] ? p.weeklyBasis : 'current';
+    const wctx = app.weeklyCtx();
     sel.value = String(p.week);
     renderBasisBtns();
 
@@ -191,7 +208,7 @@ export function createWeeklyView(ctx) {
 
     const wbLabel = DATA_BASES[wb]?.label || wb;
     $('#wkSummary').innerHTML = `<div class="row sp"><div class="scoreline" style="margin:0">
-      <div><span class="tiny">H2H 預測 · ${WEEKS[p.week][0]} · ${WEEKS[p.week][1]}</span><br><b data-testid="record">${hasOpp && live.length ? `${rec.w}–${rec.l}${rec.t ? '–' + rec.t : ''}` : '—'}</b></div>
+      <div><span class="tiny">H2H 預測 · ${(WEEKS[p.week]||WEEKS[0])[0]} · ${(WEEKS[p.week]||WEEKS[0])[1]}</span><br><b data-testid="record">${hasOpp && live.length ? `${rec.w}–${rec.l}${rec.t ? '–' + rec.t : ''}` : '—'}</b></div>
       <div><span class="tiny">預測數據基準</span><br><b>${esc(wbLabel)}</b></div>
       <div><span class="tiny">我方 / 對手 Player-Games</span><br><b>${mine.totalPG} <span class="dim">/</span> ${opp.totalPG}</b></div>
       <div><span class="tiny">DD 預估（你 − 對手）</span><br><b>${fmt1(mine.raw.DD)} <span class="dim">vs</span> ${hasOpp ? fmt1(opp.raw.DD) : '—'}</b></div>

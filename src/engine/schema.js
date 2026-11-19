@@ -52,6 +52,7 @@ export const STAT_COLUMNS = Object.freeze([
 export const DATA_BASES = Object.freeze({
   last:     { id: 'last',     label: '2025-26 完整球季', short: '上季完整', season: '2025-26', period: 'full' },
   current:  { id: 'current',  label: '2026-27 開季至今', short: '本季至今', season: '2026-27', period: 'to-date' },
+  recent5:  { id: 'recent5',  label: '2026-27 近 5 場',  short: '近 5 場',  season: '2026-27', period: 'last5'  },
   recent10: { id: 'recent10', label: '2026-27 近 10 場', short: '近 10 場', season: '2026-27', period: 'last10' },
   recent30d: { id: 'recent30d', label: '2026-27 近 30 天', short: '近 30 天', season: '2026-27', period: 'last30d' },
 });

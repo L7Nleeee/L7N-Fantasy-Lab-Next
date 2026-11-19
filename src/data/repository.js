@@ -9,6 +9,7 @@ export const DEFAULT_BASELINE_URL = 'https://raw.githubusercontent.com/L7Nleeee/
 export const DEFAULT_REMOTE_URLS = Object.freeze({
   last:     'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/season_previous.csv',
   current:  'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/season_current.csv',
+  recent5:  'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/recent5.csv',
   recent10: 'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/recent10.csv',
   recent30d:'https://raw.githubusercontent.com/L7Nleeee/L7N-Fantasy-Lab-Next/main/data/recent30d.csv',
 });
@@ -91,6 +92,11 @@ export function createRepository({ storage, now = () => new Date().toISOString()
 
     /** Fetch the public baseline CSV. Any failure keeps the existing dataset. Never throws. */
     async syncRemote(basis = 'last', { fetchImpl = globalThis.fetch, url = DEFAULT_BASELINE_URL, timeoutMs = 8000, minRows = MIN_REMOTE_ROWS, force = false } = {}) {
+      // Normalize GitHub Raw URL: /refs/heads/BRANCH/ -> /BRANCH/
+      // GitHub changed their Raw URL format; the new format causes CORS preflight failures
+      if (url && url.includes('raw.githubusercontent.com')) {
+        url = url.replace(/\/refs\/heads\/([^/]+)\//, '/$1/');
+      }
       const existing = datasets[basis];
       if (!force && (existing?.meta?.source === 'import' || existing?.meta?.source === 'pipeline')) {   // remote: always overwritable
         setSync('skipped', existing.meta.source === 'pipeline' ? `${DATA_BASES[basis].short} 由 L7N 資料管線提供，未被舊版遠端資料覆蓋。` : `已使用你手動匯入的 ${DATA_BASES[basis].short} 資料，未被遠端資料覆蓋。`);

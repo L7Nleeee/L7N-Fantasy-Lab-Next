@@ -44,7 +44,7 @@ export function normalizeProfile(p) {
   o.candAvailableOnly = !!raw.candAvailableOnly;
   o.minGP = clampMinGp(raw.minGP ?? smartDefaultMinGP());
   // V4.0.21 rule: only profiles already at schema >= 2 may keep the 'league' pool; older ones are reset to top200.
-  o.weeklyBasis = BASIS_IDS.includes(raw.weeklyBasis) ? raw.weeklyBasis : 'current';
+  o.weeklyBasis = (raw.weeklyBasis && (BASIS_IDS.includes(raw.weeklyBasis) || raw.weeklyBasis === 'recent5')) ? raw.weeklyBasis : 'current';
   o.refMode = from >= 2 && raw.refMode === 'league' ? 'league' : (from >= 3 && raw.refMode === 'top200' ? 'top200' : 'top200');
   o.dataBasis = BASIS_IDS.includes(raw.dataBasis) ? raw.dataBasis : 'last';
   o.week = Number.isFinite(Number(raw.week)) ? Math.max(0, Math.min(WEEKS.length - 1, Math.trunc(Number(raw.week)))) : 0;

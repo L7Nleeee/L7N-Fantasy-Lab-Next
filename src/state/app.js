@@ -113,7 +113,7 @@ export function createApp({ storage = createStorage(), repo, now = () => new Dat
 
     setSetting(key, value) { settings = { ...settings, [key]: value }; storage.setJSON('settings', settings); emit(['ui']); },
     get remoteUrls() { return settings.remoteUrls || {}; },
-    setRemoteUrl(basis, url) { const u = { ...(settings.remoteUrls||{}) }; if (url?.trim()) u[basis]=url.trim(); else delete u[basis]; settings={...settings,remoteUrls:u}; storage.setJSON('settings',settings); emit(['ui']); },
+    setRemoteUrl(basis, url) { const u = { ...(settings.remoteUrls||{}) }; if (url?.trim()) { let clean=url.trim(); if (clean.includes('raw.githubusercontent.com')) clean=clean.replace(/\/refs\/heads\/([^/]+)\//,'/$1/'); u[basis]=clean; } else delete u[basis]; settings={...settings,remoteUrls:u}; storage.setJSON('settings',settings); emit(['ui']); },
 
     // --- leagues ---
     addLeague(name) {
